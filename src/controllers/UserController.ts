@@ -23,7 +23,7 @@ class UserController {
 
         try {
             await User.create({ username, email, password });
-            res.status(200).json({ message: 'OK' });
+            res.status(200).json({ message: 'User successfully created' });
         } catch (error) {
             res.status(500).json({ error: 'Problem to creater user' });
             console.log(error);
@@ -35,7 +35,7 @@ class UserController {
 
         try {
             await User.destroy({ where: { user_id } });
-            res.status(200).json({ error: 'OK' });
+            res.status(200).json({ message: 'User successfully deleted' });
         } catch (error) {
             res.status(500).json({ error: 'Problem to delete user' });
             console.log(error);
@@ -74,7 +74,6 @@ class UserController {
 
             let user = await User.findByPk(userId);
             res.status(200).json(user);
-
 
         } catch (error) {
             res.status(500).json({ error: 'Problem to Update your user' });

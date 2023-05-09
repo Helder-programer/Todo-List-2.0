@@ -1,6 +1,18 @@
 import { DataTypes, Model, ModelStatic, Sequelize } from "sequelize";
 
-export default class Task extends Model {
+export interface ITask {
+    task_id: number;
+    description: string;
+    done: number;
+    priority: number;
+    limit_date: string;
+    created_at: string;
+    updated_at: string;
+    checklist_id: number;
+}
+
+
+export default class Task extends Model implements ITask {
     declare task_id: number;
     declare description: string;
     declare done: number;
@@ -8,6 +20,7 @@ export default class Task extends Model {
     declare limit_date: string;
     declare created_at: string;
     declare updated_at: string;
+    declare checklist_id: number;
 
     public static start(connection: Sequelize) {
         return this.init(
@@ -20,7 +33,10 @@ export default class Task extends Model {
 
                 description: DataTypes.STRING,
 
-                done: DataTypes.INTEGER,
+                done: {
+                    type: DataTypes.TINYINT,
+                    defaultValue: 0
+                },
 
                 priority: DataTypes.INTEGER,
 
@@ -33,7 +49,7 @@ export default class Task extends Model {
             {
                 sequelize: connection,
                 freezeTableName: true,
-                modelName: 'tb_users',
+                modelName: 'tb_tasks',
                 createdAt: 'created_at',
                 updatedAt: 'updated_at'
             }
