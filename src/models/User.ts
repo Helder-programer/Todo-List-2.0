@@ -32,27 +32,18 @@ export default class User extends Model implements IUser {
                     primaryKey: true,
                     autoIncrement: true
                 },
-                username: {
-                    type: DataTypes.STRING,
-                    allowNull: false
-                },
-                email: {
-                    type: DataTypes.STRING,
-                    allowNull: false,
-                    unique: true
-                },
-                password: {
-                    type: DataTypes.STRING,
-                    allowNull: false
-                },
-                created_at: {
-                    type: DataTypes.DATE,
-                    allowNull: false
-                },
-                updated_at: {
-                    type: DataTypes.DATE,
-                    allowNull: false
-                }
+
+                username: DataTypes.STRING,
+
+                email: DataTypes.STRING,
+        
+                password: DataTypes.STRING,
+                
+                created_at: DataTypes.DATE,
+                
+                updated_at: DataTypes.DATE
+                
+                
             },
             {
                 sequelize: connection,
@@ -65,6 +56,13 @@ export default class User extends Model implements IUser {
                         const saltRounds = 10;
                         const hashedPassword = await bcrypt.hash(user.password, saltRounds);
                         user.password = hashedPassword;
+                    },
+                    beforeUpdate: async function (user, options) {
+                        const saltRounds = 10;
+                        if (user.changed('password')) {
+                            const hashedPassword = await bcrypt.hash(user.password, saltRounds);
+                            user.password = hashedPassword;
+                        }
                     }
                 }
             }

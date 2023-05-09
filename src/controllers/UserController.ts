@@ -67,17 +67,12 @@ class UserController {
         const { username, email, password } = req.body;
         let userId = req.user?.user_id;
 
-        console.log(req.user);
         try {
+
+            await User.update({ username, email, password }, { where: { user_id: userId }, individualHooks: true });
+
+
             let user = await User.findByPk(userId);
-
-            if (!user) return res.status(401).json({ error: 'User not found' });
-
-            user.username = username;
-            user.email = email;
-            user.password = password;
-            await user.save();
-            user = await User.findByPk(userId);
             res.status(200).json(user);
 
 

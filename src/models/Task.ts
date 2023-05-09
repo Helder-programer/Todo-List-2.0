@@ -14,25 +14,21 @@ export default class Task extends Model {
             {
                 task_id: {
                     type: DataTypes.INTEGER,
+                    primaryKey: true,
+                    autoIncrement: true
                 },
-                description: {
-                    type: DataTypes.STRING,
-                },
-                done: {
-                    type: DataTypes.INTEGER,
-                },
-                priority: {
-                    type: DataTypes.INTEGER,
-                },
-                limit_date: {
-                    type: DataTypes.DATE,
-                },
-                created_at: {
-                    type: DataTypes.DATE,
-                },
-                updated_at: {
-                    type: DataTypes.DATE
-                }
+
+                description: DataTypes.STRING,
+
+                done: DataTypes.INTEGER,
+
+                priority: DataTypes.INTEGER,
+
+                limit_date: DataTypes.DATE,
+
+                created_at: DataTypes.DATE,
+
+                updated_at: DataTypes.DATE
             },
             {
                 sequelize: connection,
