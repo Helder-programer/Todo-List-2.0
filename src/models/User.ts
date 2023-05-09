@@ -1,12 +1,28 @@
 import { DataTypes, Model, ModelStatic, Sequelize } from 'sequelize';
+import bcrypt from 'bcrypt';
 
-export default class User extends Model {
+export interface IUser {
+    user_id: number;
+    username: string;
+    email: string;
+    password: string;
+    created_at: string;
+    updated_at: string;
+}
+
+
+export default class User extends Model implements IUser {
     declare user_id: number;
     declare username: string;
     declare email: string;
     declare password: string;
     declare created_at: string;
     declare updated_at: string;
+
+    public async isCorrectPassword(password: string): Promise<boolean> {
+        let isEqualPassword: boolean = await bcrypt.compare(password, this.password);
+        return isEqualPassword;
+    }
 
     public static start(connection: Sequelize) {
         return User.init(
@@ -34,7 +50,7 @@ export default class User extends Model {
                     allowNull: false
                 },
                 updated_at: {
-                    type: DataTypes.DATE, 
+                    type: DataTypes.DATE,
                     allowNull: false
                 }
             },
@@ -43,7 +59,14 @@ export default class User extends Model {
                 freezeTableName: true,
                 modelName: 'tb_users',
                 createdAt: 'created_at',
-                updatedAt: 'updated_at'
+                updatedAt: 'updated_at',
+                hooks: {
+                    beforeCreate: async function (user, options) {
+                        const saltRounds = 10;
+                        const hashedPassword = await bcrypt.hash(user.password, saltRounds);
+                        user.password = hashedPassword;
+                    }
+                }
             }
         );
     }
