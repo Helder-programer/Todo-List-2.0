@@ -17,8 +17,7 @@ declare global {
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use('/users', userRouter);
-app.use('/checklists/', checklistRouter);
-app.use(taskRouter);
+app.use('/checklists/', checklistRouter, taskRouter);
 
 app.listen(8000, () => {
     console.log('Servidor Rodando!');

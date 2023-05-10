@@ -16,5 +16,6 @@ Checklist.start(connection);
 Task.start(connection);
 User.associate(Checklist);
 Checklist.associate(User, Task);
+Task.associate(Checklist);
 
 export default connection;
