@@ -1,4 +1,5 @@
 import express from 'express';
+import cors from 'cors';
 import userRouter from './routes/users';
 import checklistRouter from './routes/checklists';
 import taskRouter from './routes/tasks';
@@ -13,7 +14,7 @@ declare global {
         }
     }
 }
-
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use('/users', userRouter);
