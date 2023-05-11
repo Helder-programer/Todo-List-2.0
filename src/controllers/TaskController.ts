@@ -1,20 +1,14 @@
 import { Request, Response } from "express";
 import Task from "../models/Task";
 import { isChecklistOwner } from "../assets/checklist";
-import { verifyTaskChecklistOwner } from '../assets/task';
+import { verifyTaskChecklistOwner, verifyTaskPriority } from '../assets/task';
 import Checklist from "../models/Checklist";
 import moment from "moment";
-import { Op, Sequelize, where } from "sequelize";
 
 interface IReqBody {
     description: string;
     limitDate: string;
     priority: number;
-}
-
-
-interface IWhereConditionsToQuery {
-
 }
 
 class TaskController {
@@ -23,6 +17,9 @@ class TaskController {
         const { checklistId } = req.params;
 
         try {
+
+            if (!verifyTaskPriority(priority)) return res.status(400).json({message: 'Invalid priority'}); 
+
             const checklistToValidate = await Checklist.findByPk(checklistId);
 
             if (!checklistToValidate) return res.status(404).json({ error: 'Checklist not found' });
@@ -48,8 +45,10 @@ class TaskController {
         const { checklistId, taskId } = req.params;
         const { description, limitDate, priority } = req.body;
 
-
         try {
+
+            if (!verifyTaskPriority(priority)) return res.status(400).json({message: 'Invalid priority'}); 
+            
             const checklistToValidate = await Checklist.findByPk(checklistId);
             const taskToValidate = await Task.findByPk(taskId);
             if (!checklistToValidate) return res.status(404).json({ message: 'Checklist not found' });
@@ -57,7 +56,7 @@ class TaskController {
             if (!taskToValidate) return res.status(404).json({ message: 'Task not found' });
 
             if (!(isChecklistOwner(checklistToValidate, req.user!)
-                && verifyTaskChecklistOwner(checklistToValidate, taskToValidate))) return res.status(401).json({ message: 'Permission denied' });
+                && verifyTaskChecklistOwner(checklistToValidate, taskToValidate))) return res.status(403).json({ message: 'Permission denied' });
 
             let taskDate = limitDate;
             if (limitDate) {
@@ -67,7 +66,6 @@ class TaskController {
             await Task.update({ description, limit_date: taskDate, priority }, { where: { task_id: taskId } });
 
             return res.status(200).json({ message: 'Task successfully updated' });
-
 
         } catch (error) {
             console.log(error);
@@ -86,7 +84,7 @@ class TaskController {
             if (!taskToValidate) return res.status(404).json({ message: 'Task not found' });
 
             if (!(isChecklistOwner(checklistToValidate, req.user!)
-                && verifyTaskChecklistOwner(checklistToValidate, taskToValidate))) return res.status(401).json({ message: 'Permission denied' });
+                && verifyTaskChecklistOwner(checklistToValidate, taskToValidate))) return res.status(403).json({ message: 'Permission denied' });
 
             await Task.destroy({ where: { task_id: taskId } });
 
@@ -107,7 +105,7 @@ class TaskController {
 
             if (!searchedChecklist) return res.status(404).json({ error: 'Checklist not found' });
 
-            if (!isChecklistOwner(searchedChecklist, req.user!)) return res.status(401).json({ message: 'Permission denied' });
+            if (!isChecklistOwner(searchedChecklist, req.user!)) return res.status(403).json({ message: 'Permission denied' });
 
             const tasks = await Task.findAll({ where: { checklist_id: checklistId } });
             return res.status(200).json(tasks);

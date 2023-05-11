@@ -46,7 +46,7 @@ class ChecklistController {
                 return res.status(200).json({ message: 'checklist successfully updated' });
             }
 
-            return res.status(401).json({ message: 'Permission denied' });
+            return res.status(403).json({ message: 'Permission denied' });
 
         } catch (error) {
             console.log(error);
@@ -68,7 +68,7 @@ class ChecklistController {
                 return res.status(200).json({ message: 'checklist successfully deleted' });
             }
 
-            return res.status(401).json({ message: 'Permission denied' });
+            return res.status(403).json({ message: 'Permission denied' });
 
         } catch (error) {
             console.log(error);
