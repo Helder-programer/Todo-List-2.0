@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import Task from "../models/Task";
-import { isChecklistOwner } from "../assets/checklist";
-import { verifyTaskChecklistOwner, verifyTaskPriority } from '../assets/task';
+import { verifyTaskPriority } from '../helpers/task';
 import Checklist from "../models/Checklist";
 import moment from "moment";
 
@@ -18,20 +17,22 @@ class TaskController {
 
         try {
 
-            if (!verifyTaskPriority(priority)) return res.status(400).json({message: 'Invalid priority'}); 
+            if (!verifyTaskPriority(priority)) return res.status(400).json({ message: 'Invalid priority' });
 
-            const checklistToValidate = await Checklist.findByPk(checklistId);
+
+            const checklistToValidate = await Checklist.findOne({ where: { checklist_id: checklistId, user_id: req.user?.user_id } });
 
             if (!checklistToValidate) return res.status(404).json({ error: 'Checklist not found' });
 
-            if (!isChecklistOwner(checklistToValidate, req.user!)) return res.status(401).json({ message: 'Permission denied' });
+            let taskLimitDate: string | null = '';
 
-            let taskDate = limitDate;
             if (limitDate) {
-                taskDate = moment(taskDate, 'DD/MM/YYYY').format('YYYY-MM-DD');
+                taskLimitDate = limitDate.replace(/-/g, '\/');
+            } else {
+                taskLimitDate = null;
             }
-            await Task.create({ description, limit_date: taskDate, priority, checklist_id: checklistId });
 
+            await Task.create({ description, limit_date: taskLimitDate, priority, checklist_id: checklistId });
 
             return res.status(200).json({ message: 'Task created successfully' });
 
@@ -47,23 +48,25 @@ class TaskController {
 
         try {
 
-            if (!verifyTaskPriority(priority)) return res.status(400).json({message: 'Invalid priority'}); 
-            
-            const checklistToValidate = await Checklist.findByPk(checklistId);
-            const taskToValidate = await Task.findByPk(taskId);
+            if (!verifyTaskPriority(priority)) return res.status(400).json({ message: 'Invalid priority' });
+
+
+            const checklistToValidate = await Checklist.findOne({ where: { checklist_id: checklistId, user_id: req.user?.user_id } });
+
+            const taskToValidate = await Task.findOne({ where: { task_id: taskId, checklist_id: checklistId } });
+
             if (!checklistToValidate) return res.status(404).json({ message: 'Checklist not found' });
 
             if (!taskToValidate) return res.status(404).json({ message: 'Task not found' });
 
-            if (!(isChecklistOwner(checklistToValidate, req.user!)
-                && verifyTaskChecklistOwner(checklistToValidate, taskToValidate))) return res.status(403).json({ message: 'Permission denied' });
-
-            let taskDate = limitDate;
+            let taskLimitDate: string | null;
             if (limitDate) {
-                taskDate = moment(taskDate, 'DD/MM/YYYY').format('YYYY-MM-DD');
+                taskLimitDate = limitDate.replace(/-/g, '\/');
+            } else {
+                taskLimitDate = null;
             }
 
-            await Task.update({ description, limit_date: taskDate, priority }, { where: { task_id: taskId } });
+            await Task.update({ description, limit_date: taskLimitDate, priority }, { where: { task_id: taskId } });
 
             return res.status(200).json({ message: 'Task successfully updated' });
 
@@ -77,18 +80,20 @@ class TaskController {
         const { checklistId, taskId } = req.params;
 
         try {
-            const checklistToValidate = await Checklist.findByPk(checklistId);
-            const taskToValidate = await Task.findByPk(taskId);
+
+            const checklistToValidate = await Checklist.findOne({ where: { checklist_id: checklistId, user_id: req.user?.user_id } });
+
+            const taskToValidate = await Task.findOne({ where: { task_id: taskId, checklist_id: checklistId } });
+
             if (!checklistToValidate) return res.status(404).json({ message: 'Checklist not found' });
 
             if (!taskToValidate) return res.status(404).json({ message: 'Task not found' });
 
-            if (!(isChecklistOwner(checklistToValidate, req.user!)
-                && verifyTaskChecklistOwner(checklistToValidate, taskToValidate))) return res.status(403).json({ message: 'Permission denied' });
+
 
             await Task.destroy({ where: { task_id: taskId } });
 
-            return res.status(200).json({ message: 'Task successfully deleted' });
+            res.status(200).json({ message: 'Task successfully deleted' });
 
         } catch (error) {
             console.log(error);
@@ -103,11 +108,10 @@ class TaskController {
 
         try {
 
-            let checklistToValidate = await Checklist.findByPk(checklistId);
+            
+            const checklistToValidate = await Checklist.findOne({ where: { checklist_id: checklistId, user_id: req.user?.user_id } });
 
-            if (!checklistToValidate) return res.status(404).json({ message: 'Checklist not found' })
-
-            if (!isChecklistOwner(checklistToValidate, req.user!)) return res.status(200).json({ message: 'Permission denied' });
+            if (!checklistToValidate) return res.status(404).json({ message: 'Checklist not found' });
 
 
             //DATE TRATAMENT
@@ -117,11 +121,11 @@ class TaskController {
 
 
             if (initialDate)
-                initialDateConverted = moment(initialDate, 'DD/MM/YYYY').format('YYYY-MM-DD');
+                initialDateConverted = limitDate.replace(/-/g, '\/');
             if (finalDate)
-                finalDateConverted = moment(finalDate, 'DD/MM/YYYY').format('YYYY-MM-DD');
+                finalDateConverted = limitDate.replace(/-/g, '\/');
             if (limitDate)
-                limitDateConverted = moment(limitDate, 'DD/MM/YYYY').format('YYYY-MM-DD');
+                limitDateConverted = limitDate.replace(/-/g, '\/');
 
 
             let sql = `select T.* from tb_tasks as T, tb_checklists as C where T.checklist_id = C.checklist_id and T.checklist_id = ${checklistId}`;
@@ -144,6 +148,35 @@ class TaskController {
             console.log(error);
             res.status(500).json({ error: 'Problem to search task' });
         }
+    }
+
+
+    public async setTaskAsDone(req: Request<{ checklistId: number, taskId: number }>, res: Response) {
+        let { checklistId, taskId } = req.params;
+
+
+        try {
+
+            const checklistToValidate = await Checklist.findOne({ where: { checklist_id: checklistId, user_id: req.user?.user_id } });
+
+            const taskToValidate = await Task.findOne({ where: { task_id: taskId, checklist_id: checklistId } });
+
+            if (!checklistToValidate) return res.status(404).json({ message: 'Checklist not found' });
+
+            if (!taskToValidate) return res.status(404).json({ message: 'Task not found' });
+
+            await Task.update({ done: !taskToValidate.done }, { where: { task_id: taskId } });
+
+            res.status(200).json({ message: 'Task successfully updated' });
+
+        } catch (error) {
+            console.log(error);
+            res.status(500).json({ error: 'Problem to update task' });
+        }
+
+
+
+
     }
 }
 

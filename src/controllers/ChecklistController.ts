@@ -1,11 +1,10 @@
 import { Request, Response } from "express";
 import Checklist, { IChecklist } from "../models/Checklist";
-import { isChecklistOwner } from "../assets/checklist";
 import Task from "../models/Task";
 import { Op } from "sequelize";
 
 interface IReqParams {
-    id: number;
+    checklistId: number;
 }
 
 interface IReqBody {
@@ -29,24 +28,19 @@ class ChecklistController {
     }
 
     public async update(req: Request<IReqParams, {}, IReqBody>, res: Response) {
-        const { id } = req.params;
+        const { checklistId } = req.params;
         const { name } = req.body;
-        const reqUser = req.user;
 
         try {
 
-            const checklistToUpdate = await Checklist.findByPk(id);
 
+            const checklistToUpdate = await Checklist.findOne({ where: { checklist_id: checklistId, user_id: req.user?.user_id } });
 
             if (!checklistToUpdate) return res.status(404).json({ error: 'Checklist not found' });
 
-            if (isChecklistOwner(checklistToUpdate, reqUser!)) {
-                checklistToUpdate.setAttributes({ name });
-                await checklistToUpdate.save();
-                return res.status(200).json({ message: 'checklist successfully updated' });
-            }
-
-            return res.status(403).json({ message: 'Permission denied' });
+            checklistToUpdate.setAttributes({ name });
+            await checklistToUpdate.save();
+            return res.status(200).json({ message: 'checklist successfully updated' });
 
         } catch (error) {
             console.log(error);
@@ -55,20 +49,16 @@ class ChecklistController {
     }
 
     public async delete(req: Request<IReqParams>, res: Response) {
-        const { id } = req.params;
-        const reqUser = req.user;
+        const { checklistId } = req.params;
 
         try {
-            const checklistToDelete = await Checklist.findByPk(id);
+            const checklistToDelete = await Checklist.findOne({ where: { checklist_id: checklistId, user_id: req.user?.user_id } });
 
             if (!checklistToDelete) return res.status(404).json({ error: 'Checklist not found' });
 
-            if (isChecklistOwner(checklistToDelete, reqUser!)) {
-                await checklistToDelete.destroy();
-                return res.status(200).json({ message: 'checklist successfully deleted' });
-            }
 
-            return res.status(403).json({ message: 'Permission denied' });
+            await checklistToDelete.destroy();
+            return res.status(200).json({ message: 'checklist successfully deleted' });
 
         } catch (error) {
             console.log(error);
@@ -79,7 +69,7 @@ class ChecklistController {
     public async index(req: Request, res: Response) {
 
         try {
-            const checklists = await Checklist.findAll({ where: { user_id: req.user!.user_id } });
+            const checklists = await Checklist.findAll({ where: { user_id: req.user!.user_id }, include: { association: 'tasks' } });
             res.status(200).json(checklists);
         } catch (error) {
             console.log(error);
@@ -87,19 +77,15 @@ class ChecklistController {
         }
     }
 
-    public async showOneChecklist(req: Request<{ id: number }>, res: Response) {
-        const { id } = req.params;
+    public async showOneChecklist(req: Request<IReqParams>, res: Response) {
+        const { checklistId } = req.params;
 
         try {
-            const searchedChecklist = await Checklist.findByPk(id);
+            const searchedChecklist = await Checklist.findOne({ where: { checklist_id: checklistId, user_id: req.user?.user_id }, include: { association: 'tasks' } });
 
             if (!searchedChecklist) return res.status(404).json({ error: 'Checklist not found' });
 
-            if (!isChecklistOwner(searchedChecklist, req.user!)) return res.status(403).json({ message: 'Permission denied' });
-
-            const checklist = await Checklist.findByPk(id, { include: { association: 'tasks' } });
-            
-            return res.status(200).json(checklist);
+            return res.status(200).json(searchedChecklist);
         } catch (error) {
             console.log(error);
             res.status(500).json({ error: 'Problem to show checklist' });
