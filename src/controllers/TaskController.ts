@@ -96,26 +96,6 @@ class TaskController {
         }
     }
 
-
-    public async showChecklistTasks(req: Request<{ checklistId: number }>, res: Response) {
-        const { checklistId } = req.params;
-
-        try {
-            const searchedChecklist = await Checklist.findByPk(checklistId);
-
-            if (!searchedChecklist) return res.status(404).json({ error: 'Checklist not found' });
-
-            if (!isChecklistOwner(searchedChecklist, req.user!)) return res.status(403).json({ message: 'Permission denied' });
-
-            const tasks = await Task.findAll({ where: { checklist_id: checklistId } });
-            return res.status(200).json(tasks);
-
-        } catch (error) {
-            console.log(error);
-            res.status(500).json({ error: 'Problem to show checklist' });
-        }
-    }
-
     public async searchChecklistTasks(req: Request<{ checklistId: number }>, res: Response) {
         const { description, initialDate, finalDate, priority, done, limitDate }: any = req.query;
         const { checklistId } = req.params;

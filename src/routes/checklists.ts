@@ -5,6 +5,7 @@ const router = express.Router();
 
 
 router.get('/', WithAuth, ChecklistController.index);
+router.get('/:id', WithAuth, ChecklistController.showOneChecklist);
 router.post('/', WithAuth, ChecklistController.create);
 router.put('/:id', WithAuth, ChecklistController.update);
 router.delete('/:id', WithAuth, ChecklistController.delete);

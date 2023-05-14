@@ -86,6 +86,25 @@ class ChecklistController {
             res.status(500).json({ error: 'Problem to show checklists' });
         }
     }
+
+    public async showOneChecklist(req: Request<{ id: number }>, res: Response) {
+        const { id } = req.params;
+
+        try {
+            const searchedChecklist = await Checklist.findByPk(id);
+
+            if (!searchedChecklist) return res.status(404).json({ error: 'Checklist not found' });
+
+            if (!isChecklistOwner(searchedChecklist, req.user!)) return res.status(403).json({ message: 'Permission denied' });
+
+            const checklist = await Checklist.findByPk(id, { include: { association: 'tasks' } });
+            
+            return res.status(200).json(checklist);
+        } catch (error) {
+            console.log(error);
+            res.status(500).json({ error: 'Problem to show checklist' });
+        }
+    }
 }
 
 
