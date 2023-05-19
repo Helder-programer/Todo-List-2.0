@@ -5,25 +5,14 @@ import dotenv from 'dotenv';
 dotenv.config();
 const secretKey = process.env.JWT_TOKEN!;
 
-interface IFullRequestBody {
-    username: string;
-    email: string;
-    password: string;
-}
-
-interface IRequestWithEmailAndPassword {
-    email: string;
-    password: string;
-}
-
-
 class UserController {
-    public async register(req: Request<{}, {}, IFullRequestBody>, res: Response) {
+    public async register(req: Request, res: Response) {
         const { username, email, password } = req.body;
 
         try {
             await User.create({ username, email, password });
             res.status(200).json({ message: 'User successfully created' });
+
         } catch (error) {
             res.status(500).json({ error: 'Problem to creater user' });
             console.log(error);
@@ -36,25 +25,28 @@ class UserController {
         try {
             await User.destroy({ where: { user_id } });
             res.status(200).json({ message: 'User successfully deleted' });
+
         } catch (error) {
             res.status(500).json({ error: 'Problem to delete user' });
             console.log(error);
         }
     }
 
-    public async login(req: Request<{}, {}, IRequestWithEmailAndPassword>, res: Response) {
+    public async login(req: Request, res: Response) {
         const { email, password } = req.body;
 
         try {
             let user = await User.findOne({ where: { email } });
 
-            if (!user) return res.status(401).json({ error: 'incorrect email or password' });
+            if (!user)
+                return res.status(401).json({ error: 'incorrect email or password' });
 
             if (await user.isCorrectPassword(password)) {
+
                 const token = jwt.sign({ email }, secretKey, { expiresIn: '1d' });
                 res.status(200).json({ user, token });
             } else {
-                return res.status(401).json({ error: 'incorrect email or password' });
+                res.status(401).json({ error: 'incorrect email or password' });
             }
 
         } catch (error) {
@@ -63,7 +55,7 @@ class UserController {
         }
     }
 
-    public async update(req: Request<{}, {}, IFullRequestBody>, res: Response) {
+    public async update(req: Request, res: Response) {
         const { username, email, password } = req.body;
         let userId = req.user?.user_id;
 
@@ -84,4 +76,4 @@ class UserController {
 }
 
 
-export default new UserController;
+export default new UserController();

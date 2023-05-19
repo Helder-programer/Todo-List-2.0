@@ -2,27 +2,21 @@ import { Request, Response } from "express";
 import Task from "../models/Task";
 import { verifyTaskPriority } from '../helpers/task';
 import Checklist from "../models/Checklist";
-import moment from "moment";
-
-interface IReqBody {
-    description: string;
-    limitDate: string;
-    priority: number;
-}
 
 class TaskController {
-    public async create(req: Request<{ checklistId: number }, {}, IReqBody>, res: Response) {
+    public async create(req: Request, res: Response) {
         const { description, limitDate, priority } = req.body;
         const { checklistId } = req.params;
 
         try {
 
-            if (!verifyTaskPriority(priority)) return res.status(400).json({ message: 'Invalid priority' });
-
+            if (!verifyTaskPriority(priority))
+                return res.status(400).json({ message: 'Invalid priority' });
 
             const checklistToValidate = await Checklist.findOne({ where: { checklist_id: checklistId, user_id: req.user?.user_id } });
 
-            if (!checklistToValidate) return res.status(404).json({ error: 'Checklist not found' });
+            if (!checklistToValidate)
+                return res.status(404).json({ error: 'Checklist not found' });
 
             let taskLimitDate: string | null = '';
 
@@ -42,24 +36,27 @@ class TaskController {
         }
     }
 
-    public async update(req: Request<{ checklistId: number, taskId: number }, {}, IReqBody>, res: Response) {
+    public async update(req: Request, res: Response) {
         const { checklistId, taskId } = req.params;
         const { description, limitDate, priority } = req.body;
 
         try {
 
-            if (!verifyTaskPriority(priority)) return res.status(400).json({ message: 'Invalid priority' });
-
+            if (!verifyTaskPriority(priority))
+                return res.status(400).json({ message: 'Invalid priority' });
 
             const checklistToValidate = await Checklist.findOne({ where: { checklist_id: checklistId, user_id: req.user?.user_id } });
 
             const taskToValidate = await Task.findOne({ where: { task_id: taskId, checklist_id: checklistId } });
 
-            if (!checklistToValidate) return res.status(404).json({ message: 'Checklist not found' });
+            if (!checklistToValidate)
+                return res.status(404).json({ message: 'Checklist not found' });
 
-            if (!taskToValidate) return res.status(404).json({ message: 'Task not found' });
+            if (!taskToValidate)
+                return res.status(404).json({ message: 'Task not found' });
 
             let taskLimitDate: string | null;
+
             if (limitDate) {
                 taskLimitDate = limitDate.replace(/-/g, '\/');
             } else {
@@ -76,7 +73,7 @@ class TaskController {
         }
     }
 
-    public async delete(req: Request<{ checklistId: number, taskId: number }>, res: Response) {
+    public async delete(req: Request, res: Response) {
         const { checklistId, taskId } = req.params;
 
         try {
@@ -85,9 +82,11 @@ class TaskController {
 
             const taskToValidate = await Task.findOne({ where: { task_id: taskId, checklist_id: checklistId } });
 
-            if (!checklistToValidate) return res.status(404).json({ message: 'Checklist not found' });
+            if (!checklistToValidate)
+                return res.status(404).json({ message: 'Checklist not found' });
 
-            if (!taskToValidate) return res.status(404).json({ message: 'Task not found' });
+            if (!taskToValidate)
+                return res.status(404).json({ message: 'Task not found' });
 
 
 
@@ -101,47 +100,30 @@ class TaskController {
         }
     }
 
-    public async searchChecklistTasks(req: Request<{ checklistId: number }>, res: Response) {
-        const { description, initialDate, finalDate, priority, done, limitDate }: any = req.query;
+    public async searchChecklistTasks(req: Request, res: Response) {
+        const { description, priority, done }: any = req.query;
         const { checklistId } = req.params;
 
 
         try {
 
-            
+
             const checklistToValidate = await Checklist.findOne({ where: { checklist_id: checklistId, user_id: req.user?.user_id } });
 
-            if (!checklistToValidate) return res.status(404).json({ message: 'Checklist not found' });
-
-
-            //DATE TRATAMENT
-            let initialDateConverted;
-            let finalDateConverted;
-            let limitDateConverted;
-
-
-            if (initialDate)
-                initialDateConverted = limitDate.replace(/-/g, '\/');
-            if (finalDate)
-                finalDateConverted = limitDate.replace(/-/g, '\/');
-            if (limitDate)
-                limitDateConverted = limitDate.replace(/-/g, '\/');
+            if (!checklistToValidate) 
+                return res.status(404).json({ message: 'Checklist not found' });
 
 
             let sql = `select T.* from tb_tasks as T, tb_checklists as C where T.checklist_id = C.checklist_id and T.checklist_id = ${checklistId}`;
 
-            if (initialDateConverted && finalDateConverted) sql += ` and date(created_at) >= '${initialDateConverted}' and date(created_at) <= '${finalDateConverted}'`;
+            if (priority) sql += ` and T.priority = '${priority}'`;
 
-            if (limitDateConverted) sql += ` and date(limit_date) = '${limitDateConverted}'`;
+            if (done) sql += ` and T.done = '${done}'`;
 
-            if (priority) sql += ` and priority = '${priority}'`;
-
-            if (done) sql += ` and done = '${done}'`;
-
-            if (description) sql += ` and description like '%${description}%'`;
-
+            if (description) sql += ` and T.description like '%${description}%'`;
 
             const tasks = await Task.sequelize?.query(sql);
+
 
             res.status(200).json(tasks![0]);
         } catch (error) {
@@ -151,7 +133,7 @@ class TaskController {
     }
 
 
-    public async setTaskAsDone(req: Request<{ checklistId: number, taskId: number }>, res: Response) {
+    public async setTaskAsDone(req: Request, res: Response) {
         let { checklistId, taskId } = req.params;
 
 
@@ -161,9 +143,11 @@ class TaskController {
 
             const taskToValidate = await Task.findOne({ where: { task_id: taskId, checklist_id: checklistId } });
 
-            if (!checklistToValidate) return res.status(404).json({ message: 'Checklist not found' });
+            if (!checklistToValidate) 
+                return res.status(404).json({ message: 'Checklist not found' });
 
-            if (!taskToValidate) return res.status(404).json({ message: 'Task not found' });
+            if (!taskToValidate) 
+                return res.status(404).json({ message: 'Task not found' });
 
             await Task.update({ done: !taskToValidate.done }, { where: { task_id: taskId } });
 
@@ -173,12 +157,8 @@ class TaskController {
             console.log(error);
             res.status(500).json({ error: 'Problem to update task' });
         }
-
-
-
-
     }
 }
 
 
-export default new TaskController;
+export default new TaskController();

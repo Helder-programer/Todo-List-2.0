@@ -1,19 +1,9 @@
 import { Request, Response } from "express";
 import Checklist, { IChecklist } from "../models/Checklist";
-import Task from "../models/Task";
-import { Op } from "sequelize";
-
-interface IReqParams {
-    checklistId: number;
-}
-
-interface IReqBody {
-    name: string;
-}
 
 
 class ChecklistController {
-    public async create(req: Request<{}, {}, IReqBody>, res: Response) {
+    public async create(req: Request, res: Response) {
         const { name } = req.body;
         const userId = req.user?.user_id;
 
@@ -27,7 +17,7 @@ class ChecklistController {
         }
     }
 
-    public async update(req: Request<IReqParams, {}, IReqBody>, res: Response) {
+    public async update(req: Request, res: Response) {
         const { checklistId } = req.params;
         const { name } = req.body;
 
@@ -48,7 +38,7 @@ class ChecklistController {
         }
     }
 
-    public async delete(req: Request<IReqParams>, res: Response) {
+    public async delete(req: Request, res: Response) {
         const { checklistId } = req.params;
 
         try {
@@ -77,7 +67,7 @@ class ChecklistController {
         }
     }
 
-    public async showOneChecklist(req: Request<IReqParams>, res: Response) {
+    public async showOneChecklist(req: Request, res: Response) {
         const { checklistId } = req.params;
 
         try {
@@ -94,4 +84,4 @@ class ChecklistController {
 }
 
 
-export default new ChecklistController;
+export default new ChecklistController();
