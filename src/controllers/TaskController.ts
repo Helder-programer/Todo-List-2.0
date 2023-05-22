@@ -2,6 +2,8 @@ import { Request, Response } from "express";
 import Task from "../models/Task";
 import { verifyTaskPriority } from '../helpers/task';
 import Checklist from "../models/Checklist";
+import { Op } from "sequelize";
+import moment from "moment";
 
 class TaskController {
     public async create(req: Request, res: Response) {
@@ -110,7 +112,7 @@ class TaskController {
 
             const checklistToValidate = await Checklist.findOne({ where: { checklist_id: checklistId, user_id: req.user?.user_id } });
 
-            if (!checklistToValidate) 
+            if (!checklistToValidate)
                 return res.status(404).json({ message: 'Checklist not found' });
 
 
@@ -143,10 +145,10 @@ class TaskController {
 
             const taskToValidate = await Task.findOne({ where: { task_id: taskId, checklist_id: checklistId } });
 
-            if (!checklistToValidate) 
+            if (!checklistToValidate)
                 return res.status(404).json({ message: 'Checklist not found' });
 
-            if (!taskToValidate) 
+            if (!taskToValidate)
                 return res.status(404).json({ message: 'Task not found' });
 
             await Task.update({ done: !taskToValidate.done }, { where: { task_id: taskId } });
@@ -156,6 +158,17 @@ class TaskController {
         } catch (error) {
             console.log(error);
             res.status(500).json({ error: 'Problem to update task' });
+        }
+    }
+
+    public async searchLateTasks(req: Request, res: Response) {
+        const { checklist_id } = req.params;
+
+        try {
+
+
+        } catch (error) {
+
         }
     }
 }
