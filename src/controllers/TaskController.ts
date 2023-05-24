@@ -1,21 +1,21 @@
 import { Request, Response } from "express";
-import Task from "../models/Task";
+import Task, { ITask } from "../models/Task";
 import { verifyTaskPriority } from '../helpers/task';
 import Checklist from "../models/Checklist";
-import { Op } from "sequelize";
 import moment from "moment";
 
 class TaskController {
     public async create(req: Request, res: Response) {
         const { description, limitDate, priority } = req.body;
         const { checklistId } = req.params;
+        const userId = req.user?.user_id;
 
         try {
 
             if (!verifyTaskPriority(priority))
                 return res.status(400).json({ message: 'Invalid priority' });
 
-            const checklistToValidate = await Checklist.findOne({ where: { checklist_id: checklistId, user_id: req.user?.user_id } });
+            const checklistToValidate = await Checklist.findOne({ where: { checklist_id: checklistId, user_id: userId } });
 
             if (!checklistToValidate)
                 return res.status(404).json({ error: 'Checklist not found' });
@@ -41,13 +41,14 @@ class TaskController {
     public async update(req: Request, res: Response) {
         const { checklistId, taskId } = req.params;
         const { description, limitDate, priority } = req.body;
+        const userId = req.user?.user_id;
 
         try {
 
             if (!verifyTaskPriority(priority))
                 return res.status(400).json({ message: 'Invalid priority' });
 
-            const checklistToValidate = await Checklist.findOne({ where: { checklist_id: checklistId, user_id: req.user?.user_id } });
+            const checklistToValidate = await Checklist.findOne({ where: { checklist_id: checklistId, user_id: userId } });
 
             const taskToValidate = await Task.findOne({ where: { task_id: taskId, checklist_id: checklistId } });
 
@@ -161,14 +162,27 @@ class TaskController {
         }
     }
 
-    public async searchLateTasks(req: Request, res: Response) {
-        const { checklist_id } = req.params;
+    public async searchTasksWithLessLimitDate(req: Request, res: Response) {
+        const userId = req.user?.user_id;
+        const currentDate = moment().startOf('day');
 
         try {
+            const tasks = await Task.findAll({ include: { association: 'checklist', where: { user_id: userId } } });
+            let tasksWithLessLimitDate: ITask[] = [];
 
+            tasks.forEach(currentTask => {
+                let diffBetweenDays = moment(currentTask.limit_date).diff(currentDate, 'days', false);
 
+                if (diffBetweenDays <= 5) {
+                    tasksWithLessLimitDate.push(currentTask);
+                };
+
+            });
+
+            return res.status(200).json(tasksWithLessLimitDate);
         } catch (error) {
-
+            console.log(error);
+            res.status(500).json({ error: 'Problem to search tasks' });
         }
     }
 }
