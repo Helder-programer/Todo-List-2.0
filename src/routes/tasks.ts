@@ -11,4 +11,4 @@ taskWithChecklistRouter.delete('/:checklistId/tasks/:taskId', WithAuth, TaskCont
 
 export const taskRouter = express.Router();
 
-taskRouter.get('/tasksWithShortDeadline', WithAuth, TaskController.searchTasksWithShortDeadline);
+taskRouter.get('/tasksWithShortDeadlineOrLate', WithAuth, TaskController.searchTasksWithShortDeadlineOrLate);

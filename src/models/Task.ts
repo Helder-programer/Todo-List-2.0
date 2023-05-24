@@ -1,14 +1,12 @@
+import moment from "moment";
 import { DataTypes, Model, ModelStatic, Sequelize } from "sequelize";
+import { ITask } from "../interfaces/ITask";
 
-export interface ITask {
-    task_id: number;
+export interface ISearchTaskDTO {
     description: string;
-    done: number;
-    priority: number;
-    limit_date: string;
-    created_at: string;
-    updated_at: string;
-    checklist_id: number;
+    priority: string;
+    done: string;
+    checklistId: string;
 }
 
 
@@ -58,5 +56,36 @@ export default class Task extends Model implements ITask {
 
     public static associate(Checklist: ModelStatic<Model>) {
         this.belongsTo(Checklist, { foreignKey: 'checklist_id', as: 'checklist', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
+    }
+
+    public static async findTasksWithShortDeadlineOrLate(userId: number | null) {
+        const currentDate = moment().startOf('day');
+        const tasks = await Task.findAll({ include: { association: 'checklist', where: { user_id: userId } } });
+        let tasksWithShortDeadline: ITask[] = [];
+
+        tasks.forEach(currentTask => {
+            let diffBetweenDays = moment(currentTask.limit_date).diff(currentDate, 'days', false);
+            let isDone = !!currentTask.done;
+            let isLateTask = moment(currentDate).diff(currentTask.limit_date, 'days', false) > 0;
+
+            if ((diffBetweenDays <= 5 || isLateTask) && !isDone) {
+                tasksWithShortDeadline.push(currentTask);
+            };
+        });
+
+        return tasksWithShortDeadline;
+    }
+
+    public static async findTasksByFilters({description, priority, done, checklistId}: ISearchTaskDTO) {
+        let sql = `select T.* from tb_tasks as T, tb_checklists as C where T.checklist_id = C.checklist_id and T.checklist_id = ${checklistId}`;
+
+        if (priority) sql += ` and T.priority = '${priority}'`;
+
+        if (done) sql += ` and T.done = '${done}'`;
+
+        if (description) sql += ` and T.description like '%${description}%'`;
+
+        const tasks = await Task.sequelize?.query(sql);
+        return tasks![0];
     }
 }

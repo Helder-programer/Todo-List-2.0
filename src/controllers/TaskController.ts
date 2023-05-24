@@ -1,8 +1,10 @@
 import { Request, Response } from "express";
-import Task, { ITask } from "../models/Task";
-import { verifyTaskPriority } from '../helpers/task';
-import Checklist from "../models/Checklist";
 import moment from "moment";
+
+import { verifyTaskPriority } from '../helpers/task';
+import { ITask } from "../interfaces/ITask";
+import Task from "../models/Task";
+import Checklist from "../models/Checklist";
 
 class TaskController {
     public async create(req: Request, res: Response) {
@@ -109,26 +111,14 @@ class TaskController {
 
 
         try {
-
-
             const checklistToValidate = await Checklist.findOne({ where: { checklist_id: checklistId, user_id: req.user?.user_id } });
 
             if (!checklistToValidate)
                 return res.status(404).json({ message: 'Checklist not found' });
 
+            const searchedTasks = await Task.findTasksByFilters({ description, priority, done, checklistId });
 
-            let sql = `select T.* from tb_tasks as T, tb_checklists as C where T.checklist_id = C.checklist_id and T.checklist_id = ${checklistId}`;
-
-            if (priority) sql += ` and T.priority = '${priority}'`;
-
-            if (done) sql += ` and T.done = '${done}'`;
-
-            if (description) sql += ` and T.description like '%${description}%'`;
-
-            const tasks = await Task.sequelize?.query(sql);
-
-
-            res.status(200).json(tasks![0]);
+            return res.status(200).json(searchedTasks);
         } catch (error) {
             console.log(error);
             res.status(500).json({ error: 'Problem to search task' });
@@ -162,25 +152,12 @@ class TaskController {
         }
     }
 
-    public async searchTasksWithShortDeadline(req: Request, res: Response) {
+    public async searchTasksWithShortDeadlineOrLate(req: Request, res: Response) {
         const userId = req.user?.user_id;
-        const currentDate = moment().startOf('day');
 
         try {
-            const tasks = await Task.findAll({ include: { association: 'checklist', where: { user_id: userId } } });
-            let tasksWithShortDeadline: ITask[] = [];
-
-            tasks.forEach(currentTask => {
-                let diffBetweenDays = moment(currentTask.limit_date).diff(currentDate, 'days', false);
-                let isDone = !!currentTask.done;
-                let isLateTask = moment(currentDate).diff(currentTask.limit_date, 'days', false) > 0;
-
-                if ((diffBetweenDays <= 5 || isLateTask) && !isDone) {
-                    tasksWithShortDeadline.push(currentTask);
-                };
-            });
-
-            return res.status(200).json(tasksWithShortDeadline);
+            let tasksWithShortDeadlineOrLate: ITask[] = await Task.findTasksWithShortDeadlineOrLate(userId ?? null);
+            return res.status(200).json(tasksWithShortDeadlineOrLate);
         } catch (error) {
             console.log(error);
             res.status(500).json({ error: 'Problem to search tasks' });
