@@ -162,24 +162,25 @@ class TaskController {
         }
     }
 
-    public async searchTasksWithLessLimitDate(req: Request, res: Response) {
+    public async searchTasksWithShortDeadline(req: Request, res: Response) {
         const userId = req.user?.user_id;
         const currentDate = moment().startOf('day');
 
         try {
             const tasks = await Task.findAll({ include: { association: 'checklist', where: { user_id: userId } } });
-            let tasksWithLessLimitDate: ITask[] = [];
+            let tasksWithShortDeadline: ITask[] = [];
 
             tasks.forEach(currentTask => {
                 let diffBetweenDays = moment(currentTask.limit_date).diff(currentDate, 'days', false);
+                let isDone = !!currentTask.done;
+                let isLateTask = moment(currentDate).diff(currentTask.limit_date, 'days', false) > 0;
 
-                if (diffBetweenDays <= 5) {
-                    tasksWithLessLimitDate.push(currentTask);
+                if ((diffBetweenDays <= 5 || isLateTask) && !isDone) {
+                    tasksWithShortDeadline.push(currentTask);
                 };
-
             });
 
-            return res.status(200).json(tasksWithLessLimitDate);
+            return res.status(200).json(tasksWithShortDeadline);
         } catch (error) {
             console.log(error);
             res.status(500).json({ error: 'Problem to search tasks' });
