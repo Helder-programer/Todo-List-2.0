@@ -1,5 +1,6 @@
 import moment from "moment";
 import { DataTypes, Model, ModelStatic, Sequelize } from "sequelize";
+
 import { ITask } from "../interfaces/ITask";
 
 export interface ISearchTaskDTO {
@@ -9,6 +10,9 @@ export interface ISearchTaskDTO {
     checklistId: string;
 }
 
+export interface IFindTasksWithShortDeadlineOrLateDTO {
+    userId: number | null;
+}
 
 export default class Task extends Model implements ITask {
     declare task_id: number;
@@ -58,7 +62,7 @@ export default class Task extends Model implements ITask {
         this.belongsTo(Checklist, { foreignKey: 'checklist_id', as: 'checklist', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
     }
 
-    public static async findTasksWithShortDeadlineOrLate(userId: number | null) {
+    public static async findTasksWithShortDeadlineOrLate({ userId }: IFindTasksWithShortDeadlineOrLateDTO) {
         const currentDate = moment().startOf('day');
         const tasks = await Task.findAll({ include: { association: 'checklist', where: { user_id: userId } } });
         let tasksWithShortDeadline: ITask[] = [];
@@ -76,7 +80,7 @@ export default class Task extends Model implements ITask {
         return tasksWithShortDeadline;
     }
 
-    public static async findTasksByFilters({description, priority, done, checklistId}: ISearchTaskDTO) {
+    public static async findTasksByFilters({ description, priority, done, checklistId }: ISearchTaskDTO) {
         let sql = `select T.* from tb_tasks as T, tb_checklists as C where T.checklist_id = C.checklist_id and T.checklist_id = ${checklistId}`;
 
         if (priority) sql += ` and T.priority = '${priority}'`;

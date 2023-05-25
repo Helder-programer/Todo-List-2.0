@@ -10,6 +10,11 @@ class UserController {
         const { username, email, password } = req.body;
 
         try {
+            const user = await User.findOne({ where: { email } });
+
+            if (user)
+                return res.status(400).json({ error: 'E-mail already exists' });
+
             await User.create({ username, email, password });
             res.status(200).json({ message: 'User successfully created' });
 
@@ -68,7 +73,7 @@ class UserController {
             res.status(200).json(user);
 
         } catch (error) {
-            res.status(500).json({ error: 'Problem to Update your user' });
+            res.status(500).json({ error: 'Problem to update your user' });
             console.log(error);
         }
 

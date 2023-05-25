@@ -1,13 +1,7 @@
 import { DataTypes, Model, ModelStatic, Sequelize } from 'sequelize';
 
+import { IChecklist } from '../interfaces/IChecklist';
 
-export interface IChecklist {
-    checklist_id: number;
-    name: string;
-    created_at: string;
-    updated_at: string;
-    user_id: number;
-}
 
 export default class Checklist extends Model implements IChecklist {
     declare checklist_id: number;

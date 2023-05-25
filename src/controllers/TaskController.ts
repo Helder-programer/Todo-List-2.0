@@ -153,10 +153,10 @@ class TaskController {
     }
 
     public async searchTasksWithShortDeadlineOrLate(req: Request, res: Response) {
-        const userId = req.user?.user_id;
+        const userId = req.user?.user_id ?? null;
 
         try {
-            let tasksWithShortDeadlineOrLate: ITask[] = await Task.findTasksWithShortDeadlineOrLate(userId ?? null);
+            let tasksWithShortDeadlineOrLate: ITask[] = await Task.findTasksWithShortDeadlineOrLate({ userId });
             return res.status(200).json(tasksWithShortDeadlineOrLate);
         } catch (error) {
             console.log(error);

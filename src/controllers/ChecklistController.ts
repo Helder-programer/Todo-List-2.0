@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
-import Checklist, { IChecklist } from "../models/Checklist";
+
+import Checklist from "../models/Checklist";
 
 
 class ChecklistController {

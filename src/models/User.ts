@@ -1,15 +1,7 @@
 import { DataTypes, Model, ModelStatic, Sequelize } from 'sequelize';
 import bcrypt from 'bcrypt';
 
-export interface IUser {
-    user_id: number;
-    username: string;
-    email: string;
-    password: string;
-    created_at: string;
-    updated_at: string;
-}
-
+import { IUser } from '../interfaces/IUser';
 
 export default class User extends Model implements IUser {
     declare user_id: number;
